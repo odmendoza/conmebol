@@ -60,15 +60,19 @@ object Comebol extends App {
 
   def exec[T](program: DBIO[T]) : T = Await.result(db.run(program), 2.second)
 
+  // Creamos la tabla 'posicion' en la base de datos
   exec(posiciones.schema.create)
   println("Database created")
 
+  // Añadimos filas a la tabla
   exec(posiciones ++= posicionesPrimeras)
   println("First positions added")
 
+  // Consulta a la base de datos, todos los registros de la tabla
   println("Print all positions in database")
   exec(posiciones.result) foreach(println)
 
+  // Consulta a la base de datos, para obtener la fila de Ecuador
   println("Print Ecuador position")
   exec(posicionEcuador.result) foreach(println)
 
