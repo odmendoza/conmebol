@@ -6,7 +6,7 @@ import scala.concurrent.{Await, duration}
 import scala.concurrent.duration._
 import scala.concurrent.ExecutionContext.Implicits.global
 
-object Comebol extends App {
+object Conmebol extends App {
 
   case class Posicion(posicion: Byte,
                       pais: String,
@@ -17,22 +17,15 @@ object Comebol extends App {
                       partidos_perdidos: Byte,
                       diferencia_gol: Byte)
 
-  class ComebolTable(tag: Tag) extends Table[Posicion](tag, "pocision") {
+  class ConmebolTable(tag: Tag) extends Table[Posicion](tag, "pocision") {
 
     def posicion = column[Byte]("posicion", O.PrimaryKey)
-
     def pais = column[String]("pais")
-
     def puntos = column[Byte]("puntos")
-
     def partidos_jugados = column[Byte]("partidos_jugados")
-
     def partidos_ganados = column[Byte]("partidos_ganados")
-
     def partidos_empatados = column[Byte]("partidos_empatados")
-
     def partidos_perdidos = column[Byte]("partidos_perdidos")
-
     def diferencia_gol = column[Byte]("diferencia_gol")
 
     def * = (posicion,
@@ -46,17 +39,36 @@ object Comebol extends App {
 
   }
 
-  def posicionesPrimeras = Seq(
-    Posicion(1, "Brasil", 12, 4, 4, 0, 0, 10),
-    Posicion(2, "Argentina", 10, 4, 3, 1, 0, 4),
-    Posicion(3, "Ecuador", 9, 4, 3, 0, 1, 7)
+  // Data from https://www.conmebol.com/es/eliminatorias-sudamericanas-catar-2022
+  val brasil = Posicion(1, "Brasil", 12, 4, 4, 0, 0, 10)
+  val argentina = Posicion(2, "Argentina", 10, 4, 3, 1, 0, 4)
+  val ecuador = Posicion(3, "Ecuador", 9, 4, 3, 0, 1, 7)
+  val paraguay = Posicion(4, "Paraguay", 6, 4, 1, 3, 0, 1)
+  val uruguay = Posicion(5, "Uruguay", 6, 4, 2, 0, 2, 0)
+  val chile = Posicion(6, "Chile", 4, 4, 1, 1, 2, 0)
+  val colombia = Posicion(7, "Colombia", 4, 4, 1, 1, 2, -5)
+  val venezuela = Posicion(8, "Venezuela", 3, 4, 1, 0, 3, -4)
+  val peru = Posicion(9, "Perú", 1, 4, 0, 1, 3, -6)
+  val bolivia = Posicion(10, "Perú", 1, 4, 0, 1, 3, -7)
+
+  def posicionesConmebol = Seq(
+    brasil,
+    argentina,
+    ecuador,
+    paraguay,
+    uruguay,
+    chile,
+    colombia,
+    venezuela,
+    peru,
+    bolivia
   )
 
-  lazy val posiciones = TableQuery[ComebolTable]
+  lazy val posiciones = TableQuery[ConmebolTable]
 
   val posicionEcuador = posiciones.filter(_.pais === "Ecuador")
 
-  val db = Database.forConfig("comebol")
+  val db = Database.forConfig("conmebol")
 
   def exec[T](program: DBIO[T]) : T = Await.result(db.run(program), 2.second)
 
@@ -65,7 +77,7 @@ object Comebol extends App {
   println("Database created")
 
   // Añadimos filas a la tabla
-  exec(posiciones ++= posicionesPrimeras)
+  exec(posiciones ++= posicionesConmebol)
   println("First positions added")
 
   // Consulta a la base de datos, todos los registros de la tabla
