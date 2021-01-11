@@ -1,4 +1,4 @@
-name := "comebol"
+name := "conmebol"
 
 version := "0.1"
 

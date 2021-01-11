@@ -2,9 +2,8 @@
 
 import slick.jdbc.H2Profile.api._
 
-import scala.concurrent.{Await, duration}
+import scala.concurrent.{Await, Future}
 import scala.concurrent.duration._
-import scala.concurrent.ExecutionContext.Implicits.global
 
 object Conmebol extends App {
 
@@ -17,15 +16,22 @@ object Conmebol extends App {
                       partidos_perdidos: Byte,
                       diferencia_gol: Byte)
 
-  class ConmebolTable(tag: Tag) extends Table[Posicion](tag, "pocision") {
+  class PosicionTable(tag: Tag) extends Table[Posicion](tag, "posiciones") {
 
     def posicion = column[Byte]("posicion", O.PrimaryKey)
+
     def pais = column[String]("pais")
+
     def puntos = column[Byte]("puntos")
+
     def partidos_jugados = column[Byte]("partidos_jugados")
+
     def partidos_ganados = column[Byte]("partidos_ganados")
+
     def partidos_empatados = column[Byte]("partidos_empatados")
+
     def partidos_perdidos = column[Byte]("partidos_perdidos")
+
     def diferencia_gol = column[Byte]("diferencia_gol")
 
     def * = (posicion,
@@ -64,28 +70,48 @@ object Conmebol extends App {
     bolivia
   )
 
-  lazy val posiciones = TableQuery[ConmebolTable]
+  lazy val posiciones = TableQuery[PosicionTable]
 
   val posicionEcuador = posiciones.filter(_.pais === "Ecuador")
 
+  val tresPrimeros =
+    for (pais <- posiciones if pais.posicion <= 3.toByte)
+    yield pais
+
   val db = Database.forConfig("conmebol")
 
-  def exec[T](program: DBIO[T]) : T = Await.result(db.run(program), 2.second)
+  def execute[T](action: DBIO[T]): T = {
+    Await.result(db.run(action), 2.second)
+  }
 
   // Creamos la tabla 'posicion' en la base de datos
-  exec(posiciones.schema.create)
+  val createSchema = posiciones.schema.create
+  // val future: Future[T] = db.run(createSchema)
+  execute(createSchema)
   println("Database created")
 
   // Añadimos filas a la tabla
-  exec(posiciones ++= posicionesConmebol)
+  execute(posiciones ++= posicionesConmebol)
   println("First positions added")
 
   // Consulta a la base de datos, todos los registros de la tabla
   println("Print all positions in database")
-  exec(posiciones.result) foreach(println)
+  execute(posiciones.result) foreach (println)
 
   // Consulta a la base de datos, para obtener la fila de Ecuador
   println("Print Ecuador position")
-  exec(posicionEcuador.result) foreach(println)
+  execute(posicionEcuador.result) foreach (println)
 
+  // Consulta a la base de datos, para obtener las tres primeras posiciones
+  println("Print first three positions")
+  execute(tresPrimeros.result) foreach (println)
+
+  /*
+  val actions: DBIO[Seq[Posicion]] = (
+    posiciones.schema.create andThen
+      (posiciones ++= posicionesConmebol) andThen
+      posicionEcuador.result
+    )
+  execute(actions)
+  */
 }
